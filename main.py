@@ -11,7 +11,7 @@ configurations = [
 # num_epochs = 1
 # train_batch_size = 8
 # fel_le_kerekit = 1  # le=1 , fel=0... lefele magasabb pontot ad
-# model_neve = "MobileNetV2Custom"
+# model_neve = "MobileNetV2Custom" ---> ez logolás miatt kell
 
 
 
@@ -41,9 +41,8 @@ SEED = 1234
 np.random.seed(SEED)
 torch.manual_seed(SEED)
 
-# Kép fájlok keresése
-train_image_files = glob.glob('../Neural_network_contest/train_data/*.png')  # Cseréld ki a mappát, ahol a képek vannak
-test_image_files = glob.glob('../Neural_network_contest/test_data/*.png')    # Test képek
+train_image_files = glob.glob('../Neural_network_contest/train_data/*.png')
+test_image_files = glob.glob('../Neural_network_contest/test_data/*.png')
 
 # Tárolók az adatokhoz
 train_data_dict = {}
@@ -125,7 +124,7 @@ print(f"Maradék teljes elemek száma a train-ben: {len(train_data_dict)}")
 print(f"Maradék teljes elemek száma a test-ben: {len(test_data_dict)}")
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
-# Kép normalizálás: skálázás 0-1 közé
+# Kép normalizálás: skálázás 0-1 közé ---> ezt meg kell nézni, h kell-e. Mert amúgy elég erős lehet.
 # train_images = train_images / 255.0
 # test_images = test_images / 255.0
 # ----------------------------------------------------------------------------------------------------------------------
@@ -136,25 +135,16 @@ train_std = train_images.std()
 test_mean = test_images.mean()
 test_std = test_images.std()
 
-# print(f'Calculated mean for train images: {train_mean}')
-# print(f'Calculated std for train images: {train_std}')
-# print(f'Calculated mean for test images: {test_mean}')
-# print(f'Calculated std for test images: {test_std}')
-
-
 
 
 
 # Alkalmazzuk a transzformációkat: Normalizálás mindkét adathalmazra
 transform_train = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Normalize(mean=[train_mean], std=[train_std])
-])
-
+    transforms.Normalize(mean=[train_mean], std=[train_std]) ])
 transform_test = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Normalize(mean=[test_mean], std=[test_std])
-])
+    transforms.Normalize(mean=[test_mean], std=[test_std])   ])
 
 train_image_tensors = []
 for img in train_images:
@@ -172,7 +162,6 @@ print(f"test_image_tensors : {test_image_tensors.shape}")  # [db, type, x, y]
 
 
 # EXCEL BEOLVASÁS --------------------------------------------------------------
-
 file_path = 'data_labels_train.csv'
 df = pd.read_csv(file_path)
 selected_data = df[['filename_id', 'defocus_label']]
