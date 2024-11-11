@@ -1,6 +1,12 @@
 
 
 
+#   Itt tárolom azokat a kiegészítő elemeket ami validációhoz és data augtationhoz kell
+#       Ezek még nem működőképesek....
+
+
+
+
 num_epochs = 5
 tran_batch_size = 16
 
