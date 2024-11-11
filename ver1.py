@@ -117,14 +117,11 @@ print(f"Maradék teljes elemek száma a test-ben: {len(test_data_dict)}")
 # test_images = test_images / 255.0
 
 # Átlag és szórás kiszámolása mindkét halmazra
-# train_mean = train_images.mean()
-# train_std = train_images.std()
-# test_mean = test_images.mean()
-# test_std = test_images.std()
-train_mean = train_images.mean(axis=(0, 1, 2))
-train_std = train_images.std(axis=(0, 1, 2))
-test_mean = test_images.mean(axis=(0, 1, 2))
-test_std = test_images.std(axis=(0, 1, 2))
+train_mean = train_images.mean()
+train_std = train_images.std()
+test_mean = test_images.mean()
+test_std = test_images.std()
+
 print(f'Calculated mean for train images: {train_mean}')
 print(f'Calculated std for train images: {train_std}')
 print(f'Calculated mean for test images: {test_mean}')
@@ -210,7 +207,6 @@ print(f"example_solutions.shape : {example_solutions.shape}")
 
 
 print("Eredeti címke:", data_array[:, 1])
-
 # erre azért van szükség, mert CrossEntrophy 0-vmennyi számokat vár
 unique_labels = np.unique(data_array[:, 1])
 label_map = {label: idx for idx, label in enumerate(unique_labels)}

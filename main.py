@@ -1,5 +1,6 @@
 
-
+num_epochs = 5
+train_batch_size = 16
 # KEPEK + EXCEL beolvasas
 
 
@@ -121,27 +122,18 @@ train_mean = train_images.mean()
 train_std = train_images.std()
 test_mean = test_images.mean()
 test_std = test_images.std()
-#train_mean = train_images.mean(axis=(0, 1, 2))
-#train_std = train_images.std(axis=(0, 1, 2))
-#test_mean = test_images.mean(axis=(0, 1, 2))
-#test_std = test_images.std(axis=(0, 1, 2))
+
 print(f'Calculated mean for train images: {train_mean}')
 print(f'Calculated std for train images: {train_std}')
 print(f'Calculated mean for test images: {test_mean}')
 print(f'Calculated std for test images: {test_std}')
 
 
+
 # --------------------------------------   Data augmentation   ---------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 from PIL import Image
-
-
-
-
-
-
-
 
 # Alkalmazzuk a transzformációkat: Normalizálás mindkét adathalmazra
 transform_train = transforms.Compose([
@@ -174,18 +166,10 @@ import pandas as pd
 import numpy as np
 file_path = 'data_labels_train.csv'
 df = pd.read_csv(file_path)
-# Csak a szükséges oszlopok kiválasztása
 selected_data = df[['filename_id', 'defocus_label']]
-# Átalakítás numpy tömbbé
 data_array = selected_data.to_numpy()
-# Ellenőrzés
 print(f"data_array.shape : {data_array.shape}")
-# EXCEL BEOLVASÁS --------------------------------------------------------------
-file_path = 'example_solutions.csv'
-df = pd.read_csv(file_path)
-selected_data = df[['Id', 'Expected']]
-example_solutions = selected_data.to_numpy()
-print(f"example_solutions.shape : {example_solutions.shape}")
+
 
 
 
@@ -205,6 +189,9 @@ print(f"example_solutions.shape : {example_solutions.shape}")
 # --------------------------------------   ALAP BEALLÍTÁS  -------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------import torch
+
+
+
 
 print("Eredeti címke:", data_array[:, 1])
 # erre azért van szükség, mert CrossEntrophy 0-vmennyi számokat vár
@@ -257,12 +244,19 @@ class CustomImageDataset(Dataset):
         return img, label
 
 
+
+
+"""
+from torch.utils.data import DataLoader, random_split
+validation_split_ratio = 0.2  # 10%-os validáció
+train_size = int((1 - validation_split_ratio) * len(train_image_ids))
+val_size = len(train_image_ids) - train_size
+train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+val_loader = DataLoader(val_dataset, batch_size=train_batch_size, shuffle=False)
+"""
 # Dataset betöltés
-# dataset = CustomImageDataset(images=train_image_tensors, image_ids=train_image_ids, data_array=data_array)
-# train_loader = DataLoader(dataset, batch_size=8, shuffle=True)
-# AUG --------------------------
-dataset = CustomImageDataset(images=train_images_augmented, labels=labels_array, ids=train_image_ids_augmented, transform=transform_train)
-train_loader = DataLoader(dataset, batch_size=8, shuffle=True)
+dataset = CustomImageDataset(images=train_image_tensors, image_ids=train_image_ids, data_array=data_array)
+train_loader = DataLoader(dataset, batch_size=train_batch_size, shuffle=True)
 
 
 
@@ -279,7 +273,6 @@ dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = model.to(dev)
 
 # Betanítás validációval
-num_epochs = 50
 for epoch in range(num_epochs):
     # Tréning szakasz
     model.train()
@@ -325,11 +318,67 @@ for epoch in range(num_epochs):
 
 
 
+# --------------------------------------   LOGOLÁS  --------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+# Evaluate on the validation set and count matching predicted vs. actual IDs
+def evaluate_on_val_set(model, val_loader, device, label_map):
+    model.eval()  # Set model to evaluation mode
+    reverse_label_map = {idx: label for label, idx in label_map.items()}  # Reverse label mapping for interpretation
+
+    correct_count = 0  # Count of correct predictions
+    total_count = 0  # Total number of validation samples
+    results = []  # To store test_ids and predicted labels for analysis
+
+    with torch.no_grad():  # No need to calculate gradients during evaluation
+        for images, labels, ids in val_loader:  # Loop through validation loader
+            images = images.to(device)
+
+            # Model predictions
+            outputs = model(images)
+            _, predicted = torch.max(outputs, 1)  # Get the index of the max log-probability
+
+            # Interpret and format the predictions
+            for i, prediction in enumerate(predicted):
+                predicted_label = reverse_label_map[prediction.item()]  # Map index to actual label
+                predicted_label = int(predicted_label)  # Ensure integer format
+
+                # Append results for analysis
+                results.append([ids[i], predicted_label])
+
+                # Check if the predicted label matches the actual label (ID)
+                if predicted_label == ids[i]:
+                    correct_count += 1
+                total_count += 1
+
+    # Calculate accuracy
+    accuracy = correct_count / total_count if total_count > 0 else 0.0
+    print(f"Validation Accuracy: {accuracy:.4f}")
+
+    return results, accuracy  # Returns results list and validation accuracy
+
+# results, val_accuracy = evaluate_on_val_set(model, val_loader, dev, label_map)
+val_accuracy = -1
+output_file = 'log.csv'
+import csv
+file_exists = os.path.isfile(output_file)
+# Eredmények mentése CSV fájlba
+with open(output_file, mode='a', newline='') as file:
+    writer = csv.writer(file)
+    if not file_exists:
+        writer.writerow(['Epochs', 'Batch_size', 'Percent'])
+    writer.writerow([num_epochs, train_batch_size, val_accuracy])
+print(f"Validation Accuracy: {val_accuracy:.4f}")
+
+
+
+
 
 # --------------------------------------   KIIRATAS  -------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 from evaluate_and_export import evaluate_model
+output_file = f'results/solution_epochs{num_epochs}_batch{train_batch_size}_accuracy{val_accuracy:.2f}.csv'
 output_file = 'solution.csv'
 evaluate_model(model, test_image_tensors, test_image_ids, label_map, output_file, dev)
 
