@@ -1,4 +1,7 @@
 
+# ITT lehet változtatni, hogy milyen konfigurációkkal fusson le egymás után.
+# Ez azért sexy, mert teljesen autómata, mind a log, mind a file létrehozása a result mappába.
+
 configurations = [
     (50, 8, 1, "MobileNetV2Custom"),
     (55, 8, 1, "MobileNetV2Custom"),
